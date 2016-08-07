@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="tree2">
+
+<!-- 
+
+CREATE TABLE IF NOT EXISTS `test`.`tb_group` (
+  `SEQ` INT(11) NOT NULL AUTO_INCREMENT,
+  `GROUP_NAME` VARCHAR(255) NULL DEFAULT NULL,
+  `PARENT_SEQ` INT(11) NOT NULL,
+  `URL` VARCHAR(255) NULL DEFAULT NULL,
+  `LEVEL` INT(11) NULL DEFAULT NULL,
+  `ORDER_NUM` INT(11) NULL DEFAULT NULL,
+  PRIMARY KEY (`SEQ`))
+ENGINE = MyISAM
+AUTO_INCREMENT = 383
+DEFAULT CHARACTER SET = utf8
+
+ -->
+
+	<select id="getOneTree" resultType="com.taxholic.web.admin.tree.dto.Tree">
+			SELECT
+				SEQ
+				,GROUP_NAME
+				,URL
+				,PARENT_SEQ
+				,LEVEL
+				,ORDER_NUM
+			FROM 
+				TB_GROUP
+			WHERE SEQ = #{parentSeq}
+			ORDER BY ORDER_NUM
+	</select>
+
+	<select id="getTree" resultType="com.taxholic.web.admin.tree.dto.Tree">
+		SELECT
+			SEQ
+			,GROUP_NAME
+			,URL
+			,PARENT_SEQ
+			,LEVEL
+			,ORDER_NUM
+		FROM 
+			TB_GROUP
+		WHERE PARENT_SEQ = #{parentSeq}
+		ORDER BY ORDER_NUM
+	</select>
+	
+	<select id="checkChildNodeCnt" parameterType="java.util.HashMap" resultType="int">
+		SELECT
+			COUNT(SEQ) AS CNT
+		FROM 
+			TB_GROUP
+		WHERE PARENT_SEQ = #{parentSeq}
+	</select>
+	
+	<select id="checkChildNode" parameterType="java.util.HashMap" resultType="com.taxholic.web.admin.tree.dto.Tree">
+		SELECT
+			SEQ
+		FROM 
+			TB_GROUP
+		WHERE PARENT_SEQ = #{seq}
+	</select>
+	
+	<insert id="insertTreeNode"  useGeneratedKeys="true"  keyProperty="seq">
+		INSERT INTO TB_GROUP(
+			GROUP_NAME
+			,PARENT_SEQ
+			,LEVEL
+			,ORDER_NUM
+		) VALUES(
+			'new Node'
+			,#{parentSeq}
+			,#{level}
+			,#{orderNum}
+		)
+	</insert>
+	
+	<delete id="removeTreeNode">
+		DELETE FROM TB_GROUP
+			WHERE
+		SEQ IN
+		<foreach item="item" index="index" collection="list"
+			open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</delete>
+	
+	<update id="updateTreeNodeText">
+		UPDATE TB_GROUP SET
+			GROUP_NAME = #{updateName}
+		WHERE
+			SEQ = #{seq}
+	</update>
+
+	<update id="updateTreeNodePosition">
+		UPDATE TB_GROUP SET
+			PARENT_SEQ = #{parentSeq}
+			,LEVEL = #{level}
+			,ORDER_NUM = #{orderNum}
+		WHERE
+			SEQ = #{seq}
+	</update>
+	
+	<update id="updateTreeOrder">
+		UPDATE TB_GROUP SET
+			ORDER_NUM = #{orderNum}
+		WHERE
+			SEQ = #{seq}
+	</update>
+	
+	<update id="updateTreeNodeUrl">
+		UPDATE TB_GROUP SET
+			URL = #{url}
+		WHERE
+			SEQ = #{seq}
+	</update>
+	
+	<select id="checkChildrenNode" resultType="com.taxholic.web.admin.tree.dto.Tree">
+		SELECT 
+			SEQ
+			,GROUP_NAME
+			,URL
+			,PARENT_SEQ
+			,LEVEL
+			,ORDER_NUM
+		FROM 
+			TB_GROUP 
+		WHERE 
+			PARENT_SEQ = #{seq}
+		ORDER BY 
+			ORDER_NUM
+	</select>
+	
+	<select id="checkChildrenNode2" resultType="com.taxholic.web.admin.tree.dto.Tree">
+		
+		SELECT  
+			A.* 
+		FROM 
+			TB_GROUP A
+		INNER JOIN 
+			TB_GROUP B
+		ON 
+			B.PARENT_SEQ > #{parentSeq}
+		 	AND A.SEQ >= B.PARENT_SEQ
+			GROUP BY A.SEQ, A.PARENT_SEQ
+			ORDER BY LEVEL,ORDER_NUM
+		
+	</select>
+	
+	<select id="checkNewParentLevel" resultType="int">
+		SELECT 
+			LEVEL
+		FROM
+			TB_GROUP
+		WHERE
+			SEQ = #{parentSeq}
+	</select>
+	
+	<insert id="copyNode" useGeneratedKeys="true"  keyProperty="seq">
+		INSERT INTO  TB_GROUP
+		(
+			GROUP_NAME
+			,URL
+			,PARENT_SEQ
+			,ORDER_NUM
+			,LEVEL
+		) 
+		SELECT 
+			GROUP_NAME
+			,URL
+			,#{parentSeq} 
+			,ORDER_NUM
+			,#{level}+LEVEL
+		FROM 
+			TB_GROUP 
+		WHERE 
+			SEQ = #{seq}
+	</insert>
+	
+	<update id="cleanOrderNum">
+		UPDATE 
+			TB_GROUP
+		SET
+			ORDER_NUM = #{orderNum}
+		WHERE
+			SEQ = #{seq}
+	</update>
+</mapper> 
+<!-- <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="tree2">
+
+
+CREATE TABLE IF NOT EXISTS `test`.`tb_group` (
+  `SEQ` INT(11) NOT NULL AUTO_INCREMENT,
+  `GROUP_NAME` VARCHAR(255) NULL DEFAULT NULL,
+  `PARENT_SEQ` INT(11) NOT NULL,
+  `URL` VARCHAR(255) NULL DEFAULT NULL,
+  `LEVEL` INT(11) NULL DEFAULT NULL,
+  `ORDER_NUM` INT(11) NULL DEFAULT NULL,
+  PRIMARY KEY (`SEQ`))
+ENGINE = MyISAM
+AUTO_INCREMENT = 383
+DEFAULT CHARACTER SET = utf8
+
+
+
+	<select id="getOneTree" resultType="com.taxholic.web.admin.tree.dto.Tree">
+			SELECT
+				SEQ
+				,GROUP_NAME
+				,URL
+				,PARENT_SEQ
+				,LEVEL
+				,ORDER_NUM
+			FROM 
+				TB_GROUP
+			WHERE SEQ = #{parentSeq}
+			ORDER BY ORDER_NUM
+	</select>
+
+	<select id="getTree" resultType="com.taxholic.web.admin.tree.dto.Tree">
+		SELECT
+			SEQ
+			,GROUP_NAME
+			,URL
+			,PARENT_SEQ
+			,LEVEL
+			,ORDER_NUM
+		FROM 
+			TB_GROUP
+		WHERE PARENT_SEQ = #{parentSeq}
+		ORDER BY ORDER_NUM
+	</select>
+	
+	<select id="checkChildNodeCnt" parameterType="java.util.HashMap" resultType="int">
+		SELECT
+			COUNT(SEQ) AS CNT
+		FROM 
+			TB_GROUP
+		WHERE PARENT_SEQ = #{parentSeq}
+	</select>
+	
+	<select id="checkChildNode" parameterType="java.util.HashMap" resultType="com.taxholic.web.admin.tree.dto.Tree">
+		SELECT
+			SEQ
+		FROM 
+			TB_GROUP
+		WHERE PARENT_SEQ = #{seq}
+	</select>
+	
+	<insert id="insertTreeNode">
+		INSERT INTO TB_GROUP(
+			GROUP_NAME
+			,PARENT_SEQ
+			,LEVEL
+			,ORDER_NUM
+		) VALUES(
+			'new Node'
+			,#{parentSeq}
+			,#{level}
+			,#{orderNum}
+		)
+		<selectKey keyProperty="seq" resultType="int" order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+	</insert>
+	
+	<delete id="removeTreeNode">
+		DELETE FROM TB_GROUP
+			WHERE
+		SEQ IN
+		<foreach item="item" index="index" collection="list"
+			open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</delete>
+	
+	<update id="updateTreeNodeText">
+		UPDATE TB_GROUP SET
+			GROUP_NAME = #{updateName}
+		WHERE
+			SEQ = #{seq}
+	</update>
+
+	<update id="updateTreeNodePosition">
+		UPDATE TB_GROUP SET
+			PARENT_SEQ = #{parentSeq}
+			,LEVEL = #{level}
+			,ORDER_NUM = #{orderNum}
+		WHERE
+			SEQ = #{seq}
+	</update>
+	
+	<update id="updateTreeOrder">
+		UPDATE TB_GROUP SET
+			ORDER_NUM = #{orderNum}
+		WHERE
+			SEQ = #{seq}
+	</update>
+	
+	<update id="updateTreeNodeUrl">
+		UPDATE TB_GROUP SET
+			URL = #{url}
+		WHERE
+			SEQ = #{seq}
+	</update>
+	
+	<select id="checkChildrenNode" resultType="com.taxholic.web.admin.tree.dto.Tree">
+		SELECT 
+			SEQ
+			,GROUP_NAME
+			,URL
+			,PARENT_SEQ
+			,LEVEL
+			,ORDER_NUM
+		FROM 
+			TB_GROUP 
+		WHERE 
+			PARENT_SEQ = #{seq}
+		ORDER BY 
+			ORDER_NUM
+	</select>
+	
+	<select id="checkChildrenNode2" resultType="com.taxholic.web.admin.tree.dto.Tree">
+		SELECT @ROWNUM := @ROWNUM+1 AS RNUM, T.*
+		FROM (
+			SELECT  
+				A.* 
+			FROM 
+				TB_GROUP A
+			INNER JOIN 
+				TB_GROUP B
+			ON 
+				B.PARENT_SEQ > #{parentSeq}
+			 	AND A.SEQ >= B.PARENT_SEQ
+				GROUP BY A.SEQ, A.PARENT_SEQ
+				ORDER BY LEVEL,ORDER_NUM
+		) AS T 
+			WHERE (@ROWNUM:=0)=0;
+	</select>
+	
+	<select id="checkNewParentLevel" resultType="int">
+		SELECT 
+			LEVEL
+		FROM
+			TB_GROUP
+		WHERE
+			SEQ = #{parentSeq}
+	</select>
+	
+	<insert id="copyNode">
+		INSERT INTO  TB_GROUP
+		(
+			GROUP_NAME
+			,URL
+			,PARENT_SEQ
+			,ORDER_NUM
+			,LEVEL
+		) 
+		SELECT 
+			GROUP_NAME
+			,URL
+			,#{parentSeq} 
+			,ORDER_NUM
+			,#{level}+LEVEL
+		FROM 
+			TB_GROUP 
+		WHERE 
+			SEQ = #{seq}
+		<selectKey keyProperty="seq" resultType="int" order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+	</insert>
+	
+	<update id="cleanOrderNum">
+		UPDATE 
+			TB_GROUP
+		SET
+			ORDER_NUM = #{orderNum}
+		WHERE
+			SEQ = #{seq}
+	</update>
+</mapper>  -->
