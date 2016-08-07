@@ -163,6 +163,8 @@ DELETE	Delete	Delete			행(Column)				필드(Field)
 			statement => "SELECT seq,title,description,reg_date AS regdate FROM sk_news"
 			#statement => "SELECT seq,title,description,reg_date AS regdate FROM sk_news WHERE reg_date > :sql_last_start"
 			#statement => "SELECT seq,title,description,reg_date AS regdate FROM sk_news WHERE reg_date > '2016-01-14T00:00:00+0900'"
+			last_run_metadata_path => "D:/00.work/server\elastic/logstash-2.3.4/logstash_jdbc_last_run"
+			statement => "SELECT seq,title,description,reg_date AS regdate FROM sk_news2 WHERE reg_date >= :sql_last_value+0900"
 			#schedule => "* * * * *"
 		}
 	}
