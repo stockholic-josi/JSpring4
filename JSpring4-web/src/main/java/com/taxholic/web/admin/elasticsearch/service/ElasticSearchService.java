@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taxholic.core.util.StringUtil;
 import com.taxholic.web.admin.elasticsearch.vo.ElasticSearch;
 import com.taxholic.web.admin.elasticsearch.vo.ElasticSearchJson;
 
@@ -48,11 +49,20 @@ public class ElasticSearchService{
 		for (SearchResult.Hit<ElasticSearch, Void> hit: hits) {
 			ElasticSearch es = hit.source;
 
-			if(hit.highlight.get("title") !=null ) es.setTitle(hit.highlight.get("title").toString());
-			if(hit.highlight.get("description") !=null ) es.setDescription(hit.highlight.get("description").toString());
+			if(hit.highlight.get("title") !=null ) {
+				es.setTitle(hit.highlight.get("title").toString());
+			}else{
+				es.setTitle(StringUtil.strlenUTF(es.getTitle(), 100, "..."));
+			}
+			
+			if(hit.highlight.get("description") !=null ) {
+				es.setDescription(hit.highlight.get("description").toString());
+			}else{
+				es.setDescription(StringUtil.strlenUTF(StringUtil.removeTag(es.getDescription()), 200, "..."));
+			}
 			
 			list.add(es);
-			logger.debug( es.getTitle() +" - "+ es.getRegdate());
+//			logger.debug( es.getTitle() +" - "+ es.getRegdate());
 		}
 		
 		return list;
