@@ -179,8 +179,8 @@
 	</dependency>
 	
 	<dependency>
-		<groupId>org.apache.poi</groupId>
-		<artifactId>poi</artifactId>
+	   <groupId>org.apache.poi</groupId>
+	    <artifactId>poi-ooxml</artifactId>
 	</dependency>
 	<dependency>
 		<groupId>com.fasterxml.jackson.core</groupId>
