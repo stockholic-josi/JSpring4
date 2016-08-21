@@ -153,29 +153,38 @@ DELETE	Delete	Delete			행(Column)				필드(Field)
 	
 	--------------------------------------------------------
 	input {
-		jdbc {
-			type => "create"
-			jdbc_driver_library => "lib/mysql-connector-java-5.1.38.jar"
-			jdbc_driver_class => "com.mysql.jdbc.Driver"
-			jdbc_connection_string => "jdbc:mysql://127.0.0.1:3306/stock?useSSL=false"
-			jdbc_user => "xxx"
-			jdbc_password => "xxx"
-			statement => "SELECT seq,title,description,reg_date AS regdate FROM sk_news"
-			#statement => "SELECT seq,title,description,reg_date AS regdate FROM sk_news WHERE reg_date > :sql_last_start"
-			#statement => "SELECT seq,title,description,reg_date AS regdate FROM sk_news WHERE reg_date > '2016-01-14T00:00:00+0900'"
-			last_run_metadata_path => "D:/00.work/server\elastic/logstash-2.3.4/logstash_jdbc_last_run"
-			statement => "SELECT seq,title,description,reg_date AS regdate FROM sk_news2 WHERE reg_date >= :sql_last_value+0900"
-			#schedule => "* * * * *"
-		}
-	}
+        jdbc {
+	      type => "stock_create"
+	      jdbc_driver_library => "lib/mysql-connector-java-5.1.38.jar"
+	      jdbc_driver_class => "com.mysql.jdbc.Driver"
+	      jdbc_connection_string => "jdbc:mysql://localhost:3306/stock?useSSL=false"
+	      jdbc_user => "xxx"
+	      jdbc_password => "xxx"
+	      last_run_metadata_path => "C:/01.work/server/elasticsearch/logstash-2.3.4/create_logstash_jdbc_last_run"
+	      statement => "SELECT seq,title,description,reg_date AS regdate FROM sk_news WHERE reg_date >=  DATE_ADD(:sql_last_value, INTERVAL '9' DAY_HOUR)"
+	      schedule => "* * * * *"
+        }
 
+         jdbc {
+	       type => "stock_delete"
+	       jdbc_driver_library => "lib/mysql-connector-java-5.1.38.jar"
+	       jdbc_driver_class => "com.mysql.jdbc.Driver"
+	       jdbc_connection_string => "jdbc:mysql://localhost:3306/stock?useSSL=false"
+	       jdbc_user => "xxx"
+	       jdbc_password => "xxx"
+	       last_run_metadata_path => "C:/01.work/server/elasticsearch/logstash-2.3.4/delete_logstash_jdbc_last_run"
+	       statement => "SELECT sk_news_seq FROM sk_news_delete WHERE reg_date >=  DATE_ADD(:sql_last_value, INTERVAL '9' DAY_HOUR)"
+	       schedule => "* * * * *"
+        }
+	}
  
 	output {
-		if [type] == "create" {
-			elasticsearch { 
+
+		if [type] == "stock_create" {
+			 elasticsearch { 
 				#action => "delete"
 				#action => "update"
-				action => "create"
+				#action => "create"
 				hosts => "localhost:9200"
 				index => "taxholic"
 				document_type => "news"
@@ -183,7 +192,17 @@ DELETE	Delete	Delete			행(Column)				필드(Field)
 			}
 		}
 	
-		#stdout { codec => json_lines } 
+		if [type] == "stock_delete" {
+			 elasticsearch { 
+				action => "delete"
+				hosts => "localhost:9200"
+				index => "taxholic"
+				document_type => "news"
+				document_id => "%{sk_news_seq}"
+			}
+		}
+	
+		stdout { codec => json_lines }
 	}
 	--------------------------------------------------------
 </pre>
