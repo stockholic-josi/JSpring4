@@ -5,6 +5,9 @@
 nginx_base_dir="/usr/local/nginx"
 nginx_daemon="${nginx_base_dir}/sbin/nginx"
 nginx_conf="${nginx_base_dir}/conf/nginx.conf"
+
+logdir="/usr/local/nginx/logs/"
+cronolog="/usr/local/cronolog/sbin/cronolog"
 	
 launch_signal() {
 	${nginx_daemon} -s ${1} &>/dev/null
@@ -20,8 +23,21 @@ check() {
 	
 start() {
 	[ -r ${nginx_conf} ] || exit 1 
+	cronolog_start || return 7
 	checkconfig && ${nginx_daemon} -c ${nginx_conf} &>/dev/null || return ${?}
 	echo "nginx start"
+}
+
+cronolog_start() {
+    if ! [ -p $logdir/access_pipe ]; then
+       rm -f $logdir/access_pipe
+       rm -f $logdir/error_pipe
+       mkfifo $logdir/access_pipe
+       mkfifo $logdir/error_pipe
+    fi
+
+    /bin/sh -c "/bin/cat $logdir/access_pipe | $cronolog $logdir/%Y%m/access.zchat.kr_%Y%m%d &"
+    /bin/sh -c "/bin/cat $logdir/error_pipe  | $cronolog $logdir/error.zchat.kr_%Y%m%d &"
 }
 	
 stop() {

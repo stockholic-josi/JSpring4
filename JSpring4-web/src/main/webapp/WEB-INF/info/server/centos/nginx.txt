@@ -1,122 +1,136 @@
---------------------------- apache
+---------------------------------------------------------------------- 설치
+wget http://nginx.org/download/nginx-1.10.1.tar.gz
 
-# ./configure --prefix=/usr/local/apache --enable-module=so --enable-so --enable-rewrite
+# ./configure --prefix=/usr/local/nginx
 
-# make ; make install
-
-
----------------------------  mod_jk
-
-# cd native
-
-# ./configure --with-apxs=/usr/local/apache/bin/apxs
-
-# make ; make install
-
-
-
-------------------------- workers.properties -------------------------
-worker.list=ajp13 
-worker.ajp13.port=8009 
-worker.ajp13.host=localhost 
-worker.ajp13.type=ajp13 
-worker.ajp13.lbfactor=1 
----------------------------------------------------------------------
- 
-------------------------- http.conf -----------------------------------
-LoadModule jk_module    modules/mod_jk.so
-
-JkWorkersFile /usr/local/apache/conf/workers.properties 
-
-
-JkMount /*.jsp ajp13
-JkMount /servlet/ ajp13
-
-
-cf) 반대로 한다면 ??
-<VirtualHost *:80>
-
-SetEnvIf Request_URI "/static/*" no-jk
-SetEnvIf Request_URI "/js/*" no-jk
-JkMount /* ajp13
-</VirtualHost>
-
-
-
----------------------------  cronolog
-# cd /usr/local/src
-# wget http://cronolog.org/download/cronolog-1.6.2.tar.gz
-# tar xvfz cronolog-1.6.2.tar.gz
-# cd cronolog-1.6.2
-# ./configure
-# make;make install
-
-
----------------------------  tomcat.sh
-#!/bin/sh
-#chkconfig: 35 81 80
-#description: tomcat 7.X
-
-# Set some variables
-MYSELF=`basename $0`
-
-case "$1" in
-        start)
-        echo -n ' '
-        su - tomcat -c "exec /usr/local/tomcat7/bin/catalina.sh start" >/dev/null 2>&1 ; echo 'tomcat7 start'
-        ;;
-        stop)
-        echo -n ' '
-        su - tomcat -c "exec /usr/local/tomcat7/bin/catalina.sh stop" >/dev/null 2>&1 ; echo 'tomcat7 stop'
-        ;;
-        *)
-        echo ""
-        echo "Usage: ${MYSELF} { start | stop }"
-        echo ""
-        exit 64
-        ;;
-esac
-
-
-/usr/local/tomcat7/conf/logging.properties  에서 아래와 같이하고 모두 주석처리
---------------------------- 
-handlers = 1catalina.org.apache.juli.FileHandler
-
-1catalina.org.apache.juli.FileHandler.level = INFO
-1catalina.org.apache.juli.FileHandler.directory = ${catalina.base}/logs
-1catalina.org.apache.juli.FileHandler.prefix = catalina.
---------------------------- 
-
-
-
----------------------------------------------------------------------------------- webalizer
-
-# yum install zlib-devel libpng-devel gd-devel
- 
-http://www.webalizer.org/download.html
- 
-
-# wget ftp://ftp.mrunix.net/pub/webalizer/webalizer-2.23-05-src.tgz
- 
- 
-# ./configure --prefix=/usr/local/webalizer -with-language=korean
- 
 # make; make install
+
+---------------------------------------------------------------------- nginx.conf
+#user  nobody;
+#CUP 개수만큼
+worker_processes  2;
+
+#error_log  logs/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+#pid        logs/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    #                  '$status $body_bytes_sent "$http_referer" '
+    #                  '"$http_user_agent" "$http_x_forwarded_for"';
+
+    #access_log  logs/access.log  main;
+    #access_log off;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+
+    #gzip  on;
+    
+ 	server {
+        listen       80;
+        #server_name  218.38.12.215;
+        server_name  *.zchat.kr zchat.kr;
+
+        #charset koi8-r;
+
+        access_log  logs/zchat.access.log;
+        #access_log off;
+
+         location / {
+                proxy_pass  http://127.0.0.1:8080;
+                proxy_set_header   Host             $host;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+        }
+
+        location /jenkins1327 {
+                proxy_pass  http://127.0.0.1:8090;
+                proxy_set_header   Host             $host;
+        }
+
+        location ~ ^/(WEB-INF)/ {
+            deny all;
+        }
+
+        ## Images and static content is treated different
+        location ~ ^/(images|js|css|static)/  {
+                access_log        off;
+                root /usr/local/www/zchat;
+        }
+
+        error_page  404              /error404.html;
+
+    }
+
+}
+
+---------------------------------------------------------------------- logrotate
+
+#vi /etc/logrotate.d/nginx
+----------------------------------------------------------
+/usr/local/nginx/logs/*.log {
+    daily
+    missingok
+    rotate 30
+    dateformat .%Y-%m-%d
+    compress
+    delaycompress
+    notifempty
+    create 640 nginx adm
+    sharedscripts
+    postrotate
+        [ -f /usr/local/nginx/logs/nginx.pid ] && kill -USR1 `cat /usr/local/nginx/logs/nginx.pid`
+    endscript
+}
+----------------------------------------------------------
+
+---------------------------------------------------------------------- tomcat log 설정
+vi conf/logging.properties
+
+# 아래처럼 ConsoleHandler만 남겨두면 모든 로그를 Standard Out으로만 찍는다.
+----------------------------------------------------------
+handlers = java.util.logging.ConsoleHandler
+.handlers = java.util.logging.ConsoleHandler
  
-#   cp /usr/local/webalizer/etc/webalizer.conf.sample 도메인.com.conf
- 
- 
-LogFile			분석할 로그파일 위치
-OutputDir			분석결과 저장위치
-HistoryName		stockholic.hist
-Incremental			yes
-IncrementalName		stockholic.current
-HostName			www.stockholic.kr
-  
- 
--------------------------------
-#!/bin/bash
-#usage: webalizer [option] [log file]
-date = `date -d "1 days ago" +%Y/%m/%d`
-/usr/local/webalizer/bin/webalizer -c /usr/local/webalizer/etc/www.stockholic.kr.conf /usr/local/apache/logs/$date/www.stockholic.kr-access_log
--------------------------------
+java.util.logging.ConsoleHandler.level = FINE
+java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter
+
+----------------------------------------------------------
+
+#vi /etc/logrotate.d/tomcat
+----------------------------------------------------------
+/usr/local/tomcat/logs/catalina.out {
+        daily
+        dateext
+        rotate 5
+        missingok
+        copytruncate
+        compress
+}
+/usr/local/jenkins/logs/catalina.out {
+        daily
+        dateext
+        rotate 5
+        missingok
+        copytruncate
+        compress
+}
+----------------------------------------------------------
+
+    
