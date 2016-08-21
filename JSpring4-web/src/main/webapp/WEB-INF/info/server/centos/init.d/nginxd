@@ -1,0 +1,53 @@
+#!/bin/sh
+#chkconfig: 35 81 80
+#description: nginx
+ 
+nginx_base_dir="/usr/local/nginx"
+nginx_daemon="${nginx_base_dir}/sbin/nginx"
+nginx_conf="${nginx_base_dir}/conf/nginx.conf"
+	
+launch_signal() {
+	${nginx_daemon} -s ${1} &>/dev/null
+}
+
+checkconfig() {
+	${nginx_daemon} -c ${nginx_conf} -t &>/dev/null
+}
+
+check() {
+	${nginx_daemon} -t -c ${nginx_conf}
+}
+	
+start() {
+	[ -r ${nginx_conf} ] || exit 1 
+	checkconfig && ${nginx_daemon} -c ${nginx_conf} &>/dev/null || return ${?}
+	echo "nginx start"
+}
+	
+stop() {
+	launch_signal stop
+	echo "nginx stop"
+}
+	
+reload() {
+	checkconfig && launch_signal reload || return ${?}
+}
+ 
+restart() {
+	stop && start
+}
+ 
+show_usage() {
+	echo "Usage: ${0} {start|stop|restart|reload|check}"
+	exit 3
+}
+ 
+case "${1}" in
+	start|stop|restart|reload|check)
+		[ -x ${nginx_daemon} ] || exit 2
+		${1}
+		;;
+	*)
+		show_usage
+		;;
+esac
